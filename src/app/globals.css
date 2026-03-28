@@ -1,0 +1,26 @@
+@import "tailwindcss";
+
+:root {
+  --color-primary: #FF6B35;
+  --color-primary-dark: #E55A2B;
+  --color-bg: #FFFBF5;
+  --color-card: #FFFFFF;
+  --color-text: #1A1A2E;
+  --color-text-sub: #6B7280;
+  --color-border: #E5E7EB;
+  --color-available: #10B981;
+  --color-hangout: #8B5CF6;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+}
+
+/* Mobile-first: max width for app shell */
+.app-shell {
+  max-width: 430px;
+  margin: 0 auto;
+  min-height: 100dvh;
+}
