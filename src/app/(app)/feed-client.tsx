@@ -4,6 +4,7 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import type { Availability, Profile } from "@/lib/types";
+import { CalendarPicker } from "@/components/calendar-picker";
 
 type Props = {
   userId: string;
@@ -13,28 +14,7 @@ type Props = {
 
 export function FeedClient({ userId, profile, availabilities }: Props) {
   const router = useRouter();
-  const [showForm, setShowForm] = useState(false);
-  const [message, setMessage] = useState("");
-  const [hours, setHours] = useState(2);
-  const [submitting, setSubmitting] = useState(false);
-
-  const handleQuickAvailable = async () => {
-    const supabase = createClient();
-    const start = new Date();
-    const end = new Date(start.getTime() + hours * 60 * 60 * 1000);
-
-    setSubmitting(true);
-    await supabase.from("availabilities").insert({
-      user_id: userId,
-      start_time: start.toISOString(),
-      end_time: end.toISOString(),
-      message: message || "ヒマです！",
-    });
-    setSubmitting(false);
-    setShowForm(false);
-    setMessage("");
-    router.refresh();
-  };
+  const [showCalendar, setShowCalendar] = useState(false);
 
   const handleDelete = async (id: string) => {
     const supabase = createClient();
@@ -54,12 +34,16 @@ export function FeedClient({ userId, profile, availabilities }: Props) {
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
     if (d.toDateString() === tomorrow.toDateString()) return "明日";
+    const dayAfter = new Date(today);
+    dayAfter.setDate(dayAfter.getDate() + 2);
+    if (d.toDateString() === dayAfter.toDateString()) return "明後日";
     return d.toLocaleDateString("ja-JP", { month: "short", day: "numeric" });
   };
 
+  const myAvailabilities = availabilities.filter((a) => a.user_id === userId);
+
   return (
     <div>
-      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold" style={{ color: "var(--color-primary)" }}>
           nomo!
@@ -69,66 +53,26 @@ export function FeedClient({ userId, profile, availabilities }: Props) {
         </span>
       </div>
 
-      {/* Quick Action */}
-      {!showForm ? (
+      {!showCalendar ? (
         <button
-          onClick={() => setShowForm(true)}
+          onClick={() => setShowCalendar(true)}
           className="w-full py-4 rounded-2xl text-white font-bold text-lg shadow-lg active:scale-[0.98] transition-transform"
           style={{ background: "var(--color-available)" }}
         >
-          🙋 今ヒマ！
+          {myAvailabilities.length > 0 ? "📅 空き時間を編集" : "📅 空いてる時間を選ぶ"}
         </button>
       ) : (
-        <div
-          className="p-4 rounded-2xl border-2 mb-2"
-          style={{ borderColor: "var(--color-available)", background: "var(--color-card)" }}
-        >
-          <input
-            type="text"
-            placeholder="何したい？（例：飲みたい！映画見たい）"
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm mb-3 focus:outline-none focus:border-[var(--color-primary)]"
-          />
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-sm" style={{ color: "var(--color-text-sub)" }}>
-              空き時間:
-            </span>
-            {[1, 2, 3, 4].map((h) => (
-              <button
-                key={h}
-                onClick={() => setHours(h)}
-                className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-                  hours === h
-                    ? "text-white"
-                    : "bg-gray-100 text-gray-600"
-                }`}
-                style={hours === h ? { background: "var(--color-available)" } : {}}
-              >
-                {h}h
-              </button>
-            ))}
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setShowForm(false)}
-              className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-medium"
-            >
-              キャンセル
-            </button>
-            <button
-              onClick={handleQuickAvailable}
-              disabled={submitting}
-              className="flex-1 py-2.5 rounded-xl text-white text-sm font-bold disabled:opacity-50"
-              style={{ background: "var(--color-available)" }}
-            >
-              {submitting ? "..." : "シェアする"}
-            </button>
-          </div>
-        </div>
+        <CalendarPicker
+          userId={userId}
+          onClose={() => setShowCalendar(false)}
+          onSaved={() => {
+            setShowCalendar(false);
+            router.refresh();
+          }}
+          existingAvailabilities={availabilities}
+        />
       )}
 
-      {/* Feed */}
       <div className="mt-6">
         <h2 className="text-sm font-bold mb-3" style={{ color: "var(--color-text-sub)" }}>
           みんなの空き状況
@@ -141,7 +85,7 @@ export function FeedClient({ userId, profile, availabilities }: Props) {
               まだ誰もヒマを出していません
             </p>
             <p className="text-xs mt-1" style={{ color: "var(--color-text-sub)" }}>
-              「今ヒマ！」を押して最初の一人になろう
+              「空いてる時間を選ぶ」を押して最初の一人になろう
             </p>
           </div>
         ) : (
