@@ -51,8 +51,15 @@ function getThreeDays(): Date[] {
   return days;
 }
 
+function localDateStr(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
 function slotKey(date: Date, hour: number): string {
-  return `${date.toISOString().slice(0, 10)}-${hour}`;
+  return `${localDateStr(date)}-${hour}`;
 }
 
 function getExistingSlots(availabilities: Availability[], userId: string): Set<string> {
@@ -63,7 +70,7 @@ function getExistingSlots(availabilities: Availability[], userId: string): Set<s
       const start = new Date(a.start_time);
       const end = new Date(a.end_time);
       for (let h = start.getHours(); h < end.getHours() || (end.getMinutes() > 0 && h <= end.getHours()); h++) {
-        const dateStr = start.toISOString().slice(0, 10);
+        const dateStr = localDateStr(start);
         if (HOURS.includes(h)) {
           slots.add(`${dateStr}-${h}`);
         }
@@ -79,7 +86,8 @@ function mapEventsToSlots(events: CalendarEvent[]): Map<string, string[]> {
     const end = new Date(event.end);
     const startHour = start.getHours();
     const endHour = end.getHours() + (end.getMinutes() > 0 ? 1 : 0);
-    const dateStr = start.toISOString().slice(0, 10);
+    const dateStr = localDateStr(start);
+
     for (let h = startHour; h < endHour; h++) {
       if (HOURS.includes(h)) {
         const key = `${dateStr}-${h}`;
