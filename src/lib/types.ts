@@ -32,13 +32,24 @@ export type Comment = {
   profile?: Profile;
 };
 
+export type FriendTag = {
+  id: string;
+  user_id: string;
+  name: string;
+  created_at: string;
+  members?: { friend_user_id: string }[];
+};
+
 export type Availability = {
   id: string;
   user_id: string;
   start_time: string;
   end_time: string;
   message: string | null;
+  visibility: "all" | "tags";
+  visibility_tag_ids: string[] | null;
   created_at: string;
+  // Joined
   profile?: Profile;
   reactions?: Reaction[];
   comments?: Comment[];
@@ -53,6 +64,7 @@ export type Hangout = {
   end_time: string;
   max_people: number;
   created_at: string;
+  // Joined
   profile?: Profile;
   participants?: HangoutParticipant[];
 };
