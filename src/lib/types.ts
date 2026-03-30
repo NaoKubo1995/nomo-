@@ -14,6 +14,24 @@ export type Friendship = {
   created_at: string;
 };
 
+export type Reaction = {
+  id: string;
+  availability_id: string;
+  user_id: string;
+  type: "like" | "interested";
+  created_at: string;
+  profile?: Profile;
+};
+
+export type Comment = {
+  id: string;
+  availability_id: string;
+  user_id: string;
+  text: string;
+  created_at: string;
+  profile?: Profile;
+};
+
 export type Availability = {
   id: string;
   user_id: string;
@@ -21,8 +39,9 @@ export type Availability = {
   end_time: string;
   message: string | null;
   created_at: string;
-  // Joined
   profile?: Profile;
+  reactions?: Reaction[];
+  comments?: Comment[];
 };
 
 export type Hangout = {
@@ -34,7 +53,6 @@ export type Hangout = {
   end_time: string;
   max_people: number;
   created_at: string;
-  // Joined
   profile?: Profile;
   participants?: HangoutParticipant[];
 };
