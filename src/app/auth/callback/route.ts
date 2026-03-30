@@ -10,7 +10,6 @@ export async function GET(request: Request) {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
-      // Ensure profile exists
       const {
         data: { user },
       } = await supabase.auth.getUser();
@@ -30,6 +29,19 @@ export async function GET(request: Request) {
             avatar_url: user.user_metadata.avatar_url,
             invite_code: inviteCode,
           });
+        } else {
+          const { data: fullProfile } = await supabase
+            .from("profiles")
+            .select("invite_code")
+            .eq("id", user.id)
+            .single();
+          if (fullProfile && (!fullProfile.invite_code || fullProfile.invite_code === "")) {
+            const inviteCode = crypto.randomUUID().slice(0, 8);
+            await supabase
+              .from("profiles")
+              .update({ invite_code: inviteCode })
+              .eq("id", user.id);
+          }
         }
       }
 
