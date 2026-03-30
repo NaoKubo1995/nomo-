@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import type { Availability, Profile, Reaction, Comment } from "@/lib/types";
@@ -15,6 +15,12 @@ type Props = {
 export function FeedClient({ userId, profile, availabilities }: Props) {
   const router = useRouter();
   const [showCalendar, setShowCalendar] = useState(false);
+
+  // フィードを開いたら未読をリセット
+  useEffect(() => {
+    fetch("/api/mark-feed-seen", { method: "POST" });
+  }, []);
+
   const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
   const [openComments, setOpenComments] = useState<Set<string>>(new Set());
 
@@ -185,6 +191,7 @@ export function FeedClient({ userId, profile, availabilities }: Props) {
                     </div>
                   </div>
 
+                  {/* Reaction buttons */}
                   <div className="px-4 pb-3 flex items-center gap-2">
                     <button
                       onClick={() => handleReaction(av.id, "like")}
@@ -200,7 +207,7 @@ export function FeedClient({ userId, profile, availabilities }: Props) {
                         hasInterested ? "border-yellow-200 bg-yellow-50 text-yellow-600" : "border-gray-200 text-gray-500 hover:bg-gray-50"
                       }`}
                     >
-                      🙋 興味あり{interests.length > 0 && ` ${interests.length}`}
+                      {hasInterested ? "🙋" : "🙋‍♂️"} 興味あり{interests.length > 0 && ` ${interests.length}`}
                     </button>
                     <button
                       onClick={() => toggleComments(av.id)}
@@ -210,6 +217,7 @@ export function FeedClient({ userId, profile, availabilities }: Props) {
                     </button>
                   </div>
 
+                  {/* Reaction details */}
                   {(likes.length > 0 || interests.length > 0) && (
                     <div className="px-4 pb-2">
                       {likes.length > 0 && (
@@ -225,6 +233,7 @@ export function FeedClient({ userId, profile, availabilities }: Props) {
                     </div>
                   )}
 
+                  {/* Comments section */}
                   {isCommentsOpen && (
                     <div className="border-t border-gray-100">
                       {comments.length > 0 && (
