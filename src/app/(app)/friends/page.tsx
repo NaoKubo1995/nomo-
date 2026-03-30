@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { FriendsClient } from "./friends-client";
+import type { FriendTag } from "@/lib/types";
 
 export default async function FriendsPage() {
   const supabase = await createClient();
@@ -9,12 +10,14 @@ export default async function FriendsPage() {
 
   if (!user) return null;
 
+  // Get user's profile for invite code
   const { data: profile } = await supabase
     .from("profiles")
     .select("*")
     .eq("id", user.id)
     .single();
 
+  // Get accepted friendships with profiles
   const { data: acceptedRaw } = await supabase
     .from("friendships")
     .select(
@@ -29,6 +32,7 @@ export default async function FriendsPage() {
 
   const friendIds = friends.map((f: any) => f.id);
 
+  // Get pending requests TO this user
   const { data: pendingRaw } = await supabase
     .from("friendships")
     .select("*, requester:profiles!friendships_requester_id_fkey(*)")
@@ -40,6 +44,7 @@ export default async function FriendsPage() {
     profile: f.requester,
   }));
 
+  // Get pending requests FROM this user (to exclude from suggestions)
   const { data: sentPendingRaw } = await supabase
     .from("friendships")
     .select("addressee_id")
@@ -48,6 +53,7 @@ export default async function FriendsPage() {
 
   const sentPendingIds = (sentPendingRaw ?? []).map((f: any) => f.addressee_id);
 
+  // Get friends of friends
   let friendsOfFriends: any[] = [];
   if (friendIds.length > 0) {
     const { data: fofRaw } = await supabase
@@ -60,6 +66,7 @@ export default async function FriendsPage() {
       )
       .eq("status", "accepted");
 
+    // Build a map of potential friends
     const fofMap = new Map<string, { profile: any; mutualFriends: string[] }>();
 
     (fofRaw ?? []).forEach((f: any) => {
@@ -68,6 +75,7 @@ export default async function FriendsPage() {
       const otherProfile = f.requester_id === friendId ? f.addressee : f.requester;
       const otherId = otherProfile.id;
 
+      // Skip self, existing friends, and pending requests
       if (otherId === user.id || friendIds.includes(otherId) || sentPendingIds.includes(otherId)) return;
 
       if (fofMap.has(otherId)) {
@@ -83,6 +91,15 @@ export default async function FriendsPage() {
     }));
   }
 
+  // Get user's tags with members
+  const { data: tagsRaw } = await supabase
+    .from("friend_tags")
+    .select("*, members:friend_tag_members(friend_user_id)")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: true });
+
+  const tags: FriendTag[] = tagsRaw ?? [];
+
   return (
     <FriendsClient
       userId={user.id}
@@ -90,6 +107,7 @@ export default async function FriendsPage() {
       friends={friends}
       pendingRequests={pendingRequests}
       friendsOfFriends={friendsOfFriends}
+      tags={tags}
     />
   );
 }
