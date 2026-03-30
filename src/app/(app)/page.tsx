@@ -9,14 +9,12 @@ export default async function HomePage() {
 
   if (!user) return null;
 
-  // Get current user's profile
   const { data: profile } = await supabase
     .from("profiles")
     .select("*")
     .eq("id", user.id)
     .single();
 
-  // Get friend IDs
   const { data: friendships } = await supabase
     .from("friendships")
     .select("requester_id, addressee_id")
@@ -27,7 +25,6 @@ export default async function HomePage() {
     f.requester_id === user.id ? f.addressee_id : f.requester_id
   );
 
-  // Get availabilities from friends (and self), future only
   const now = new Date().toISOString();
   const allIds = [user.id, ...friendIds];
 
@@ -35,7 +32,7 @@ export default async function HomePage() {
   if (allIds.length > 0) {
     const { data } = await supabase
       .from("availabilities")
-      .select("*, profile:profiles(*)")
+      .select("*, profile:profiles(*), reactions(*, profile:profiles(*)), comments(*, profile:profiles(*))")
       .in("user_id", allIds)
       .gte("end_time", now)
       .order("start_time", { ascending: true });
