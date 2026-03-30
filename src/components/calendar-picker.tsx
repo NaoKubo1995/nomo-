@@ -62,23 +62,6 @@ function slotKey(date: Date, hour: number): string {
   return `${localDateStr(date)}-${hour}`;
 }
 
-function getExistingSlots(availabilities: Availability[], userId: string): Set<string> {
-  const slots = new Set<string>();
-  availabilities
-    .filter((a) => a.user_id === userId)
-    .forEach((a) => {
-      const start = new Date(a.start_time);
-      const end = new Date(a.end_time);
-      for (let h = start.getHours(); h < end.getHours() || (end.getMinutes() > 0 && h <= end.getHours()); h++) {
-        const dateStr = localDateStr(start);
-        if (HOURS.includes(h)) {
-          slots.add(`${dateStr}-${h}`);
-        }
-      }
-    });
-  return slots;
-}
-
 function mapEventsToSlots(events: CalendarEvent[]): Map<string, string[]> {
   const slotEvents = new Map<string, string[]>();
   events.forEach((event) => {
@@ -101,11 +84,9 @@ function mapEventsToSlots(events: CalendarEvent[]): Map<string, string[]> {
   return slotEvents;
 }
 
-export function CalendarPicker({ userId, onClose, onSaved, existingAvailabilities }: Props) {
+export function CalendarPicker({ userId, onClose, onSaved }: Props) {
   const days = getThreeDays();
-  const [selected, setSelected] = useState<Set<string>>(
-    () => getExistingSlots(existingAvailabilities, userId)
-  );
+  const [selected, setSelected] = useState<Set<string>>(new Set());
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
   const [dragMode, setDragMode] = useState<"select" | "deselect" | null>(null);
@@ -166,7 +147,6 @@ export function CalendarPicker({ userId, onClose, onSaved, existingAvailabilitie
   const handleSave = async () => {
     setSaving(true);
     const supabase = createClient();
-    await supabase.from("availabilities").delete().eq("user_id", userId);
 
     const slotsByDate = new Map<string, number[]>();
     selected.forEach((key) => {
@@ -198,7 +178,10 @@ export function CalendarPicker({ userId, onClose, onSaved, existingAvailabilitie
       inserts.push({ user_id: userId, start_time: start.toISOString(), end_time: end.toISOString(), message: message || "ヒマです！" });
     });
 
-    if (inserts.length > 0) { await supabase.from("availabilities").insert(inserts); }
+    if (inserts.length > 0) {
+      await supabase.from("availabilities").insert(inserts);
+    }
+
     setSaving(false);
     onSaved();
   };
